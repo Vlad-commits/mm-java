@@ -5,6 +5,11 @@ plugins {
 group 'org.mm'
 version '1.0-SNAPSHOT'
 
+ext {
+    junitBomVersion = "5.6.2"
+    reactorBomVersion = "Dysprosium-SR11"
+}
+
 repositories {
     mavenCentral()
 }
@@ -13,7 +18,32 @@ test {
     useJUnitPlatform()
 }
 
+
+
+task task1jar(type: Jar) {
+    dependsOn compileJava
+    from sourceSets.main.output
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    archiveBaseName = 'task1'
+    manifest {
+        attributes('Main-Class': 'org.mm.atm.ATM')
+    }
+}
+assemble.dependsOn(task1jar)
+
+task task1(type: Exec) {
+    dependsOn task1jar
+    standardInput = System.in
+    commandLine "java", "-jar", "${file(task1jar.archiveFile)}"
+}
+
 dependencies {
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.2")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.2")
+    implementation platform("org.junit:junit-bom:$junitBomVersion")
+    implementation platform("io.projectreactor:reactor-bom:$reactorBomVersion")
+
+    implementation("io.projectreactor:reactor-core")
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testImplementation("io.projectreactor:reactor-test")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 }
