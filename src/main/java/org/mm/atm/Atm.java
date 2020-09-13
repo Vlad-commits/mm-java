@@ -30,23 +30,22 @@ public class Atm {
   public Flux<String> solve(long value) {
     AtomicReference<BigInteger> count = new AtomicReference<>(BigInteger.ZERO);
     final var combinations = getExchangeCombinationCharacteristicVectors(value)
-        .map(longs -> {
-          var sb = new StringBuilder("( ");
+        .doOnNext(__ -> count.accumulateAndGet(BigInteger.ONE, BigInteger::add))
+        .flatMapSequential(longs -> Flux.<String>create(fluxSink -> {
+          fluxSink.next("( ");
           for (int i = 0; i < longs.length; i++) {
             for (long j = 0; j < longs[i]; j++) {
-              sb.append(sortedDenominations[i]);
-              sb.append(" ");
+              fluxSink.next(sortedDenominations[i] + " ");
             }
           }
-          sb.append(")");
-          return sb.toString();
-        })
-        .doOnNext(__ -> count.accumulateAndGet(BigInteger.ONE, BigInteger::add));
+          fluxSink.next(")\n");
+          fluxSink.complete();
+        }));
     return Flux.concat(
-        Mono.just("Combinations: "),
+        Mono.just("Combinations: \n"),
         combinations,
-        Mono.just("Number of combinations: "),
-        Mono.fromCallable(() -> count.get().toString())
+        Mono.just("Number of combinations: \n"),
+        Mono.fromCallable(() -> count.get().toString() + "\n")
     );
   }
 

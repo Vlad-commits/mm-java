@@ -5,6 +5,6 @@ public class Task1 {
     final var cli = new Cli().start();
     final var atm = new Atm(cli.getDenominations());
     atm.solve(cli.getValue())
-        .subscribe(System.out::println);
+        .subscribe(System.out::print);
   }
 }
