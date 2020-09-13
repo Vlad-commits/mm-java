@@ -2,8 +2,7 @@ package org.mm.atm;
 
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.util.Optional;
-import java.util.Scanner;
+import java.util.*;
 
 class Cli {
   private long[] denominations;
@@ -53,6 +52,15 @@ class Cli {
         }
       }
     } while (!validDenominations);
+
+    final var distinctDenominations = Arrays.stream(denominations)
+        .distinct()
+        .toArray();
+    if (!(distinctDenominations.length == denominations.length)) {
+      out.println("Denominations contains duplicates. They will be removed.");
+      denominations = distinctDenominations;
+    }
+
     this.denominations = denominations;
   }
 

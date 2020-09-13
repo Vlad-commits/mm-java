@@ -17,7 +17,7 @@ public class Atm {
       throw new IllegalArgumentException("Not positive numbers are not allowed.");
     }
 
-    var copy = Arrays.copyOf(denominations, denominations.length);
+    var copy = Arrays.stream(denominations).distinct().toArray();
     Arrays.sort(copy);
     this.sortedDenominations = copy;
   }
