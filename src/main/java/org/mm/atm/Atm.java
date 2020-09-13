@@ -4,7 +4,6 @@ import reactor.core.publisher.Flux;
 
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.LongStream;
 
@@ -88,62 +87,7 @@ public class Atm {
 
   public static void main(String[] args) {
     final var cli = new Cli().start();
-    final var atm1 = new Atm(cli.denominations);
-    atm1.solveAndPrint(cli.value);
-  }
-
-  private static class Cli {
-    long[] denominations;
-    long value;
-
-    public Cli start() {
-      var scanner = new Scanner(System.in);
-
-
-      boolean validDenominations;
-      do {
-        validDenominations = true;
-        System.out.println("Enter comma-separated available denomination: ");
-        {
-          try {
-            denominations = Arrays.stream(scanner.nextLine().split(","))
-                .map(String::trim)
-                .mapToLong((Long::parseLong))
-                .toArray();
-          } catch (NumberFormatException e) {
-            System.out.println("Bad format.");
-            validDenominations = false;
-            continue;
-          }
-
-          if (Arrays.stream(denominations).anyMatch(l -> l <= 0)) {
-            System.out.println("Not positive numbers are not allowed.");
-            validDenominations = false;
-          }
-        }
-      } while (!validDenominations);
-
-      boolean validValue;
-
-      do {
-        validValue = true;
-        System.out.println("Enter value to exchange: ");
-        try {
-          final var line = scanner.nextLine().trim();
-          value = Long.parseLong(line);
-        } catch (NumberFormatException e) {
-          validValue = false;
-          System.out.println("Bad input.");
-          continue;
-        }
-
-        if (value < 0) {
-          validValue = false;
-          System.out.println("Negative number is not allowed.");
-        }
-      } while (!validValue);
-
-      return this;
-    }
+    final var atm1 = new Atm(cli.getDenominations());
+    atm1.solveAndPrint(cli.getValue());
   }
 }
