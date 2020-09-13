@@ -6,11 +6,11 @@ import reactor.test.StepVerifier;
 
 import java.util.Arrays;
 
-class ATMTest {
+class AtmTest {
 
   @Test
   void example1() {
-    final var atm = new ATM(new long[] {3, 2});
+    final var atm = new Atm(new long[] {3, 2});
 
     atm.evaluateExchangeCombinations(5)
         .as(StepVerifier::create)
@@ -20,7 +20,7 @@ class ATMTest {
 
   @Test
   void example2_1() {
-    final var atm = new ATM(new long[] {1, 2});
+    final var atm = new Atm(new long[] {1, 2});
 
     atm.evaluateExchangeCombinations(5)
         .as(StepVerifier::create)
@@ -32,7 +32,7 @@ class ATMTest {
 
   @Test
   void example2_2() {
-    final var atm = new ATM(new long[] {1, 2});
+    final var atm = new Atm(new long[] {1, 2});
 
     atm.evaluateExchangeCombinations(4)
         .as(StepVerifier::create)
@@ -44,7 +44,7 @@ class ATMTest {
 
   @Test
   void shouldReturnEmptyWhenDenominationsIsEmpty() {
-    final var atm = new ATM(new long[] {});
+    final var atm = new Atm(new long[] {});
     atm.evaluateExchangeCombinations(4)
         .as(StepVerifier::create)
         .expectNextCount(0)
@@ -53,7 +53,7 @@ class ATMTest {
 
   @Test
   void shouldReturnOneWhenValueIsZero() {
-    final var atm = new ATM(new long[] {1, 2, 3, 4});
+    final var atm = new Atm(new long[] {1, 2, 3, 4});
 
     atm.evaluateExchangeCombinations(0)
         .as(StepVerifier::create)
@@ -63,7 +63,7 @@ class ATMTest {
 
   @Test
   void shouldReturnEmptyWhenDenominationIsGreaterThanValue() {
-    final var atm = new ATM(new long[] {5});
+    final var atm = new Atm(new long[] {5});
     atm.evaluateExchangeCombinations(4)
         .as(StepVerifier::create)
         .expectNextCount(0)
@@ -72,7 +72,7 @@ class ATMTest {
 
   @Test
   void shouldReturnEmptyWhenValueIsNotDivisibleByDenomination() {
-    final var atm = new ATM(new long[] {2});
+    final var atm = new Atm(new long[] {2});
 
     atm.evaluateExchangeCombinations(5)
         .as(StepVerifier::create)
@@ -83,7 +83,7 @@ class ATMTest {
   @Test
   @Disabled("Takes too much time. Run manually and check memory usage.")
   void shouldNotFailOnBigValues() {
-    final var atm = new ATM(new long[] {2, 1});
+    final var atm = new Atm(new long[] {2, 1});
 
     atm.evaluateExchangeCombinations(Long.MAX_VALUE)
         .ignoreElements()

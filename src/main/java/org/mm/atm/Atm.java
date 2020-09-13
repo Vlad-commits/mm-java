@@ -8,10 +8,10 @@ import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.LongStream;
 
-public class ATM {
+public class Atm {
   private final long[] sortedDenominations;
 
-  public ATM(long[] denominations) {
+  public Atm(long[] denominations) {
     if (Arrays.stream(denominations).
         anyMatch(l -> l <= 0)) {
       throw new IllegalArgumentException("Not positive numbers are not allowed.");
@@ -87,16 +87,16 @@ public class ATM {
 
 
   public static void main(String[] args) {
-    final var cli = new CLI().start();
-    final var atm1 = new ATM(cli.denominations);
+    final var cli = new Cli().start();
+    final var atm1 = new Atm(cli.denominations);
     atm1.solveAndPrint(cli.value);
   }
 
-  private static class CLI {
+  private static class Cli {
     long[] denominations;
     long value;
 
-    public CLI start() {
+    public Cli start() {
       var scanner = new Scanner(System.in);
 
 
