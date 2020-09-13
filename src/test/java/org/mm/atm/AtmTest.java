@@ -52,13 +52,13 @@ class AtmTest {
   }
 
   @Test
-  void shouldReturnOneWhenValueIsZero() {
+  void shouldReturnIllegalArgumentExceptionWhenValueIsZero() {
     final var atm = new Atm(new long[] {1, 2, 3, 4});
 
     atm.getExchangeCombinationCharacteristicVectors(0)
         .as(StepVerifier::create)
-        .expectNextMatches(c -> Arrays.equals(new long[] {0, 0, 0, 0}, c))
-        .verifyComplete();
+        .expectError(IllegalArgumentException.class)
+        .verify();
   }
 
   @Test

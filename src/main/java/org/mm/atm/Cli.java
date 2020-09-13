@@ -77,9 +77,9 @@ class Cli {
         validValue = false;
       } else {
         final var value = parsed.get();
-        if (value < 0) {
+        if (value <= 0) {
           validValue = false;
-          out.println("Negative number is not allowed.");
+          out.println("Not positive numbers are not allowed.");
         }
       }
 

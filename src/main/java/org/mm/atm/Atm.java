@@ -54,8 +54,8 @@ public class Atm {
    * @return Flux that "contains" characteristic vectors of exchange combination.
    */
   Flux<long[]> getExchangeCombinationCharacteristicVectors(long value) {
-    if (value < 0) {
-      throw new IllegalArgumentException("Negative number is not allowed.");
+    if (value <= 0) {
+      return Flux.error(() -> new IllegalArgumentException("Not positive numbers are not allowed."));
     }
     return getExchangeCombinationCharacteristicVectors(value, sortedDenominations, sortedDenominations.length);
   }
