@@ -1,6 +1,7 @@
 package org.mm.atm;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -21,36 +22,48 @@ public class Atm {
     this.sortedDenominations = copy;
   }
 
-  public void solveAndPrint(long value) {
+
+  /**
+   * @param value - value to exchange
+   * @return Flux that "contains" output for solution.
+   */
+  public Flux<String> solve(long value) {
     AtomicReference<BigInteger> count = new AtomicReference<>(BigInteger.ZERO);
-    System.out.println("Combinations: ");
-    evaluateExchangeCombinations(value)
-        .doOnNext(longs -> {
-          System.out.print("( ");
+    final var combinations = getExchangeCombinationCharacteristicVectors(value)
+        .map(longs -> {
+          var sb = new StringBuilder("( ");
           for (int i = 0; i < longs.length; i++) {
             for (long j = 0; j < longs[i]; j++) {
-              System.out.print(sortedDenominations[i] + " ");
+              sb.append(sortedDenominations[i]);
+              sb.append(" ");
             }
           }
-          System.out.print(")");
-          System.out.println();
+          sb.append(")");
+          return sb.toString();
         })
-        .doOnNext(__ -> count.accumulateAndGet(BigInteger.ONE, BigInteger::add))
-        .blockLast();
-    System.out.println("Number of combinations: ");
-    System.out.println(count.get());
+        .doOnNext(__ -> count.accumulateAndGet(BigInteger.ONE, BigInteger::add));
+    return Flux.concat(
+        Mono.just("Combinations: "),
+        combinations,
+        Mono.just("Number of combinations: "),
+        Mono.fromCallable(() -> count.get().toString())
+    );
   }
 
-  public Flux<long[]> evaluateExchangeCombinations(long value) {
+  /**
+   * @param value - value to exchange
+   * @return Flux that "contains" characteristic vectors of exchange combination.
+   */
+  Flux<long[]> getExchangeCombinationCharacteristicVectors(long value) {
     if (value < 0) {
       throw new IllegalArgumentException("Negative number is not allowed.");
     }
-    return evaluateExchangeCombinations(value, sortedDenominations, sortedDenominations.length);
+    return getExchangeCombinationCharacteristicVectors(value, sortedDenominations, sortedDenominations.length);
   }
 
-  private static Flux<long[]> evaluateExchangeCombinations(long value,
-                                                           long[] availableSortedDenominations,
-                                                           int totalDenominationsCount) {
+  private static Flux<long[]> getExchangeCombinationCharacteristicVectors(long value,
+                                                                          long[] availableSortedDenominations,
+                                                                          int totalDenominationsCount) {
     if (availableSortedDenominations.length == 0) {
       return Flux.empty();
     }
@@ -77,7 +90,7 @@ public class Atm {
     final var longStream = LongStream.range(0L, (value / maxDenomination) + 1L).boxed();
 
     return Flux.fromStream(longStream)
-        .flatMap(i -> evaluateExchangeCombinations(
+        .flatMap(i -> getExchangeCombinationCharacteristicVectors(
             value - maxDenomination * i,
             denominationsWithoutMax,
             totalDenominationsCount)
@@ -87,7 +100,8 @@ public class Atm {
 
   public static void main(String[] args) {
     final var cli = new Cli().start();
-    final var atm1 = new Atm(cli.getDenominations());
-    atm1.solveAndPrint(cli.getValue());
+    final var atm = new Atm(cli.getDenominations());
+    atm.solve(cli.getValue())
+        .subscribe(System.out::println);
   }
 }
