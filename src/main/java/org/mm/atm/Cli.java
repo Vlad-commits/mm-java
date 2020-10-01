@@ -5,10 +5,10 @@ import java.io.PrintStream;
 import java.util.*;
 
 class Cli {
-  private long[] denominations;
-  private long value;
   private final Scanner scanner;
   private final PrintStream out;
+  private long[] denominations;
+  private long value;
 
   public Cli() {
     this(System.in, System.out);

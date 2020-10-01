@@ -22,6 +22,41 @@ public class Atm {
     this.sortedDenominations = copy;
   }
 
+  private static Flux<long[]> getExchangeCombinationCharacteristicVectors(long value,
+                                                                          long[] availableSortedDenominations,
+                                                                          int totalDenominationsCount) {
+    if (availableSortedDenominations.length == 0) {
+      return Flux.empty();
+    }
+
+    if (value == 0) {
+      long[] zeros = new long[totalDenominationsCount];
+      return Flux.just(zeros);
+    }
+
+    if (availableSortedDenominations.length == 1) {
+      if (value % availableSortedDenominations[0] == 0) {
+        long[] combination = new long[totalDenominationsCount];
+        combination[0] = value / availableSortedDenominations[0];
+        return Flux.just(combination);
+      } else {
+        return Flux.empty();
+      }
+    }
+
+    final var length = availableSortedDenominations.length;
+    final var maxDenomination = availableSortedDenominations[length - 1];
+    final var denominationsWithoutMax = Arrays.copyOfRange(availableSortedDenominations, 0, length - 1);
+
+    final var longStream = LongStream.range(0L, (value / maxDenomination) + 1L).boxed();
+
+    return Flux.fromStream(longStream)
+        .flatMap(i -> getExchangeCombinationCharacteristicVectors(
+            value - maxDenomination * i,
+            denominationsWithoutMax,
+            totalDenominationsCount)
+            .doOnNext(longs -> longs[length - 1] = i));
+  }
 
   /**
    * @param value - value to exchange
@@ -58,41 +93,5 @@ public class Atm {
       return Flux.error(() -> new IllegalArgumentException("Not positive numbers are not allowed."));
     }
     return getExchangeCombinationCharacteristicVectors(value, sortedDenominations, sortedDenominations.length);
-  }
-
-  private static Flux<long[]> getExchangeCombinationCharacteristicVectors(long value,
-                                                                          long[] availableSortedDenominations,
-                                                                          int totalDenominationsCount) {
-    if (availableSortedDenominations.length == 0) {
-      return Flux.empty();
-    }
-
-    if (value == 0) {
-      long[] zeros = new long[totalDenominationsCount];
-      return Flux.just(zeros);
-    }
-
-    if (availableSortedDenominations.length == 1) {
-      if (value % availableSortedDenominations[0] == 0) {
-        long[] combination = new long[totalDenominationsCount];
-        combination[0] = value / availableSortedDenominations[0];
-        return Flux.just(combination);
-      } else {
-        return Flux.empty();
-      }
-    }
-
-    final var length = availableSortedDenominations.length;
-    final var maxDenomination = availableSortedDenominations[length - 1];
-    final var denominationsWithoutMax = Arrays.copyOfRange(availableSortedDenominations, 0, length - 1);
-
-    final var longStream = LongStream.range(0L, (value / maxDenomination) + 1L).boxed();
-
-    return Flux.fromStream(longStream)
-        .flatMap(i -> getExchangeCombinationCharacteristicVectors(
-            value - maxDenomination * i,
-            denominationsWithoutMax,
-            totalDenominationsCount)
-            .doOnNext(longs -> longs[length - 1] = i));
   }
 }
