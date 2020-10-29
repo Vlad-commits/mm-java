@@ -125,31 +125,23 @@ class BinaryTree<K, V> {
   }
 
   void balance() {
-
-    final var leftDepth = depth(left);
-    final var rightDepth = depth(right);
-
-    if (leftDepth == rightDepth + 2) {
-
-      if (depth(left.getRight()) <= depth(left.getLeft())) {
-        simpleRightRotation();
-      } else {
-        doubleRightRotation();
-      }
+    if (simpleRightRotationRequired()) {
+      simpleRightRotation();
+    } else if (simpleLeftRotationRequired()) {
+      simpleLeftRotation();
+    } else if (doubleLeftRotationRequired()) {
+      doubleLeftRotation();
+    } else if (doubleRightRotationRequired()) {
+      doubleRightRotation();
     }
 
-    if (leftDepth + 2 == rightDepth) {
-
-      if (depth(right.getLeft()) <= depth(right.getRight())) {
-        simpleLeftRotation();
-      } else {
-        doubleLeftRotation();
-      }
-    }
     recalculateDepthBasedOnChildren();
   }
 
   void simpleLeftRotation() {
+    if (!simpleLeftRotationRequired()) {
+      return;
+    }
     var aKey = this.key;
     var aValue = this.value;
     var bKey = right.key;
@@ -165,6 +157,10 @@ class BinaryTree<K, V> {
   }
 
   void doubleLeftRotation() {
+    if (!doubleLeftRotationRequired()) {
+      return;
+    }
+
     var aKey = this.key;
     var aValue = this.value;
     var bKey = right.key;
@@ -183,6 +179,9 @@ class BinaryTree<K, V> {
   }
 
   void simpleRightRotation() {
+    if (!simpleRightRotationRequired()) {
+      return;
+    }
     var aKey = this.key;
     var aValue = this.value;
     var bKey = this.getLeft().key;
@@ -197,6 +196,9 @@ class BinaryTree<K, V> {
   }
 
   void doubleRightRotation() {
+    if (!doubleRightRotationRequired()) {
+      return;
+    }
     var aKey = this.key;
     var aValue = this.value;
     var bKey = left.key;
@@ -212,6 +214,22 @@ class BinaryTree<K, V> {
     this.value = cValue;
     this.setLeft(new BinaryTree<>(comparator, bKey, bValue, L, M));
     this.setRight(new BinaryTree<>(comparator, aKey, aValue, N, R));
+  }
+
+  private boolean simpleLeftRotationRequired() {
+    return depth(left) + 2 == depth(right) && depth(right.getLeft()) <= depth(right.getRight());
+  }
+
+  private boolean doubleLeftRotationRequired() {
+    return depth(left) + 2 == depth(right) && depth(right.getLeft()) > depth(right.getRight());
+  }
+
+  private boolean simpleRightRotationRequired() {
+    return depth(left) == depth(right) + 2 && depth(left.getRight()) <= depth(left.getLeft());
+  }
+
+  private boolean doubleRightRotationRequired() {
+    return depth(left) == depth(right) + 2 && depth(left.getRight()) > depth(left.getLeft());
   }
 
   private void recalculateDepthBasedOnChildren() {
