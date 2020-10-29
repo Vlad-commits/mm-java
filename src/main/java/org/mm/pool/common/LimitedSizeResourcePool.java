@@ -11,24 +11,6 @@ public class LimitedSizeResourcePool<R> implements ResourcePool<R> {
   protected final ResourceFactory<? extends R> resourceFactory;
   protected final LimitedSizeCollection<PooledResourceDescriptor<R>> resources;
 
-  protected static class PooledResourceDescriptor<R> {
-    private volatile PooledResource<R> resource;
-    private final AtomicReference<Status> status = new AtomicReference<>(Status.BUSY);
-
-    public PooledResource<R> getResource() {
-      return resource;
-    }
-
-    public void setResource(PooledResource<R> resource) {
-      this.resource = resource;
-    }
-
-    public AtomicReference<Status> getStatus() {
-      return status;
-    }
-  }
-
-
   public LimitedSizeResourcePool(ResourceFactory<? extends R> resourceFactory, int maxPoolSize) {
     this.resourceFactory = resourceFactory;
     this.resources = new LimitedSizeCollection<>(maxPoolSize);
@@ -48,7 +30,6 @@ public class LimitedSizeResourcePool<R> implements ResourcePool<R> {
       }
     }
   }
-
 
   @Override
   public void release(PooledResource<R> resource) {
@@ -91,6 +72,23 @@ public class LimitedSizeResourcePool<R> implements ResourcePool<R> {
       return Optional.of(result);
     } else {
       return Optional.empty();
+    }
+  }
+
+  protected static class PooledResourceDescriptor<R> {
+    private final AtomicReference<Status> status = new AtomicReference<>(Status.BUSY);
+    private volatile PooledResource<R> resource;
+
+    public PooledResource<R> getResource() {
+      return resource;
+    }
+
+    public void setResource(PooledResource<R> resource) {
+      this.resource = resource;
+    }
+
+    public AtomicReference<Status> getStatus() {
+      return status;
     }
   }
 }

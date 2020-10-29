@@ -5,8 +5,8 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 class SingleThreadWorker implements Worker {
-  private volatile Runnable runnable;
   private final AtomicBoolean running = new AtomicBoolean(false);
+  private volatile Runnable runnable;
   private volatile boolean terminating = false;
 
   public SingleThreadWorker(boolean daemon) {
