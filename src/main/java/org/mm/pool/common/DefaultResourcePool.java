@@ -8,16 +8,25 @@ import java.util.*;
 
 public class DefaultResourcePool<R> extends LimitedSizeResourcePool<R> {
   private final LimitedSizeCollection<Tuple2<PooledResourceDescriptor<R>, Long>> releasedTimestampsMillis;
-  private final long unusedResourceTtl;
+  private final long unusedResourceTtlMs;
   private final Timer cleanUpTimer;
 
-  public DefaultResourcePool(ResourceFactory<R> resourceFactory, int maxPoolSize, long unusedResourceTtl) {
+  public DefaultResourcePool(ResourceFactory<R> resourceFactory,
+                             int maxPoolSize,
+                             long unusedResourceTtlMs) {
+    this(resourceFactory, maxPoolSize, unusedResourceTtlMs, unusedResourceTtlMs, 1000);
+  }
+
+  public DefaultResourcePool(ResourceFactory<R> resourceFactory,
+                             int maxPoolSize,
+                             long unusedResourceTtlMs,
+                             long cleanUnDelayMs,
+                             long cleanUpIntervalMs) {
     super(resourceFactory, maxPoolSize);
     this.releasedTimestampsMillis = new LimitedSizeCollection<>(maxPoolSize);
-    this.unusedResourceTtl = unusedResourceTtl;
+    this.unusedResourceTtlMs = unusedResourceTtlMs;
     cleanUpTimer = new Timer(true);
-    //todo make configurable
-    startTimer(1, 100);
+    startTimer(cleanUnDelayMs, cleanUpIntervalMs);
 
   }
 
@@ -41,7 +50,7 @@ public class DefaultResourcePool<R> extends LimitedSizeResourcePool<R> {
         .filter(resourceDescriptor -> Status.FREE.equals(resourceDescriptor.getStatus().get()))
         .filter(resourceDescriptor1 -> findReleaseTimestampRecord(resourceDescriptor1)
             .map(Tuple2::getT2)
-            .filter(ts -> System.currentTimeMillis() - ts > unusedResourceTtl)
+            .filter(ts -> System.currentTimeMillis() - ts > unusedResourceTtlMs)
             .isPresent())
         .forEach(resourceDescriptor -> {
           final var acquired = resourceDescriptor.getStatus().compareAndSet(Status.FREE, Status.BUSY);
@@ -49,7 +58,7 @@ public class DefaultResourcePool<R> extends LimitedSizeResourcePool<R> {
             final var releaseTimestampRecord = findReleaseTimestampRecord(resourceDescriptor);
             final var expired = releaseTimestampRecord
                 .map(Tuple2::getT2)
-                .filter(ts -> System.currentTimeMillis() - ts > unusedResourceTtl)
+                .filter(ts -> System.currentTimeMillis() - ts > unusedResourceTtlMs)
                 .isPresent();
             if (expired) {
               resourceFactory.destroy(resourceDescriptor.getResource().getResource());

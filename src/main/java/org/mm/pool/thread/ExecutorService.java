@@ -9,8 +9,16 @@ import java.util.concurrent.RejectedExecutionException;
 public class ExecutorService implements Worker {
   private final ResourcePool<Worker> resourcePool;
 
+  public ExecutorService(int maxPoolSize) {
+    this(maxPoolSize, false);
+  }
+
   public ExecutorService(int maxPoolSize, boolean daemon) {
-    resourcePool = new DefaultResourcePool<>(() -> new SingleThreadWorker(daemon), maxPoolSize, 10000);
+    this(maxPoolSize, daemon, 10000);
+  }
+
+  public ExecutorService(int maxPoolSize, boolean daemon, long ttlMs) {
+    resourcePool = new DefaultResourcePool<>(new WorkerFactory(daemon), maxPoolSize, ttlMs);
   }
 
 
@@ -23,7 +31,7 @@ public class ExecutorService implements Worker {
 
   @Override
   public void shutdown() {
-    //todo
+    resourcePool.shutdown();
   }
 
   private void doExecute(Runnable runnable, PooledResource<Worker> worker) {
