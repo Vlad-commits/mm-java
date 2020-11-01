@@ -8,6 +8,10 @@ public interface ResourcePool<R> {
 
   @Deprecated
   default PooledResource<R> acquireImmediately() {
+    if (isTerminating()) {
+      //todo exception instead?
+      return null;
+    }
     Optional<PooledResource<R>> resource;
     do {
       resource = acquire();
@@ -18,4 +22,8 @@ public interface ResourcePool<R> {
   Optional<PooledResource<R>> acquire();
 
   void release(PooledResource<R> resource);
+
+  boolean isTerminating();
+
+  void shutdown();
 }

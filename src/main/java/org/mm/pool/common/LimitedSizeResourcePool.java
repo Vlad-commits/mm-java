@@ -6,18 +6,23 @@ import org.mm.pool.ResourcePool;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
-//todo add resources shutdown
 public class LimitedSizeResourcePool<R> implements ResourcePool<R> {
-  protected final ResourceFactory<? extends R> resourceFactory;
+  protected final ResourceFactory<R> resourceFactory;
   protected final LimitedSizeCollection<PooledResourceDescriptor<R>> resources;
+  protected volatile boolean terminating;
 
-  public LimitedSizeResourcePool(ResourceFactory<? extends R> resourceFactory, int maxPoolSize) {
+  public LimitedSizeResourcePool(ResourceFactory<R> resourceFactory, int maxPoolSize) {
     this.resourceFactory = resourceFactory;
     this.resources = new LimitedSizeCollection<>(maxPoolSize);
+    this.terminating = false;
   }
 
   @Override
   public Optional<PooledResource<R>> acquire() {
+    if (this.terminating) {
+      return Optional.empty();
+    }
+
     final var pooled = tryGetPooled();
     if (pooled.isPresent()) {
       return pooled.map(PooledResourceDescriptor::getResource);
@@ -41,6 +46,24 @@ public class LimitedSizeResourcePool<R> implements ResourcePool<R> {
     doRelease(pooledResourceDescriptor);
 
     pooledResourceDescriptor.getStatus().set(Status.FREE);
+  }
+
+  @Override
+  public boolean isTerminating() {
+    return this.terminating;
+  }
+
+  @Override
+  public void shutdown() {
+    this.terminating = true;
+    while (resources.stream().noneMatch(r -> Status.BUSY.equals(r.getStatus().get()))) {
+      Thread.onSpinWait();
+    }
+    resources.stream()
+        .forEach(r -> {
+          final R resource = r.getResource().getResource();
+          resourceFactory.destroy(resource);
+        });
   }
 
   protected void doRelease(PooledResourceDescriptor<R> pooledResourceDescriptor) {

@@ -11,7 +11,7 @@ public class DefaultResourcePool<R> extends LimitedSizeResourcePool<R> {
   private final long unusedResourceTtl;
   private final Timer cleanUpTimer;
 
-  public DefaultResourcePool(ResourceFactory<? extends R> resourceFactory, int maxPoolSize, long unusedResourceTtl) {
+  public DefaultResourcePool(ResourceFactory<R> resourceFactory, int maxPoolSize, long unusedResourceTtl) {
     super(resourceFactory, maxPoolSize);
     this.releasedTimestampsMillis = new LimitedSizeCollection<>(maxPoolSize);
     this.unusedResourceTtl = unusedResourceTtl;
@@ -52,6 +52,7 @@ public class DefaultResourcePool<R> extends LimitedSizeResourcePool<R> {
                 .filter(ts -> System.currentTimeMillis() - ts > unusedResourceTtl)
                 .isPresent();
             if (expired) {
+              resourceFactory.destroy(resourceDescriptor.getResource().getResource());
               resources.remove(resourceDescriptor);
               releasedTimestampsMillis.remove(releaseTimestampRecord.get());
             } else {
