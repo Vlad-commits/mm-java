@@ -56,7 +56,7 @@ public class LimitedSizeResourcePool<R> implements ResourcePool<R> {
   @Override
   public void shutdown() {
     this.terminating = true;
-    while (resources.stream().noneMatch(r -> Status.BUSY.equals(r.getStatus().get()))) {
+    while (resources.stream().anyMatch(r -> Status.BUSY.equals(r.getStatus().get()))) {
       Thread.onSpinWait();
     }
     resources.stream()

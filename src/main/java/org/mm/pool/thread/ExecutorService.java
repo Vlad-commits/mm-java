@@ -23,9 +23,8 @@ public class ExecutorService implements Worker {
 
 
   @Override
-  //todo queue instead of rejecting
   public void execute(Runnable runnable) throws RejectedExecutionException {
-    var worker = resourcePool.acquire().orElseThrow(RejectedExecutionException::new);
+    var worker = resourcePool.acquireImmediately();
     doExecute(runnable, worker);
   }
 
@@ -36,9 +35,12 @@ public class ExecutorService implements Worker {
 
   private void doExecute(Runnable runnable, PooledResource<Worker> worker) {
     worker.getResource().execute(() -> {
-      try (worker) {
+      try {
         runnable.run();
+      } finally {
+        resourcePool.release(worker);
       }
     });
+
   }
 }

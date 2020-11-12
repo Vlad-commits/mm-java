@@ -6,14 +6,12 @@ import java.util.Optional;
 
 public interface ResourcePool<R> {
 
-  @Deprecated
   default PooledResource<R> acquireImmediately() {
-    if (isTerminating()) {
-      //todo exception instead?
-      return null;
-    }
     Optional<PooledResource<R>> resource;
     do {
+      if (isTerminating()) {
+        throw new RuntimeException("Pool is terminating");
+      }
       resource = acquire();
     } while (resource.isEmpty());
     return resource.get();

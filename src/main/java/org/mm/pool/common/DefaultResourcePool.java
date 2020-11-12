@@ -14,7 +14,7 @@ public class DefaultResourcePool<R> extends LimitedSizeResourcePool<R> {
   public DefaultResourcePool(ResourceFactory<R> resourceFactory,
                              int maxPoolSize,
                              long unusedResourceTtlMs) {
-    this(resourceFactory, maxPoolSize, unusedResourceTtlMs, unusedResourceTtlMs, 1000);
+    this(resourceFactory, maxPoolSize, unusedResourceTtlMs, unusedResourceTtlMs, 2000);
   }
 
   public DefaultResourcePool(ResourceFactory<R> resourceFactory,
@@ -25,15 +25,21 @@ public class DefaultResourcePool<R> extends LimitedSizeResourcePool<R> {
     super(resourceFactory, maxPoolSize);
     this.releasedTimestampsMillis = new LimitedSizeCollection<>(maxPoolSize);
     this.unusedResourceTtlMs = unusedResourceTtlMs;
-    cleanUpTimer = new Timer(true);
+    cleanUpTimer = new Timer(false);
     startTimer(cleanUnDelayMs, cleanUpIntervalMs);
 
   }
 
   @Override
   protected void doRelease(PooledResourceDescriptor<R> pooledResourceDescriptor) {
-    releasedTimestampsMillis.add(Tuples.of(pooledResourceDescriptor, System.currentTimeMillis()));
+    updateLastUsedTimestamp(pooledResourceDescriptor);
     super.doRelease(pooledResourceDescriptor);
+  }
+
+  private void updateLastUsedTimestamp(PooledResourceDescriptor<R> pooledResourceDescriptor) {
+    findReleaseTimestampRecord(pooledResourceDescriptor)
+        .ifPresent(releasedTimestampsMillis::remove);
+    releasedTimestampsMillis.add(Tuples.of(pooledResourceDescriptor, System.currentTimeMillis()));
   }
 
   private void startTimer(long delayMillis, long intervalMillis) {
@@ -48,28 +54,22 @@ public class DefaultResourcePool<R> extends LimitedSizeResourcePool<R> {
   private void cleanUpUnusedResources() {
     resources.stream()
         .filter(resourceDescriptor -> Status.FREE.equals(resourceDescriptor.getStatus().get()))
-        .filter(resourceDescriptor1 -> findReleaseTimestampRecord(resourceDescriptor1)
-            .map(Tuple2::getT2)
-            .filter(ts -> System.currentTimeMillis() - ts > unusedResourceTtlMs)
-            .isPresent())
-        .forEach(resourceDescriptor -> {
-          final var acquired = resourceDescriptor.getStatus().compareAndSet(Status.FREE, Status.BUSY);
-          if (acquired) {
-            final var releaseTimestampRecord = findReleaseTimestampRecord(resourceDescriptor);
-            final var expired = releaseTimestampRecord
-                .map(Tuple2::getT2)
-                .filter(ts -> System.currentTimeMillis() - ts > unusedResourceTtlMs)
-                .isPresent();
-            if (expired) {
-              resourceFactory.destroy(resourceDescriptor.getResource().getResource());
-              resources.remove(resourceDescriptor);
-              releasedTimestampsMillis.remove(releaseTimestampRecord.get());
-            } else {
-              resourceDescriptor.getStatus().set(Status.FREE);
-            }
-          }
-        });
+        .filter(this::shouldBeRemoved)
+        .forEach(this::remove);
   }
+
+  @Override
+  public void shutdown() {
+    cleanUpTimer.cancel();
+    super.shutdown();
+  }
+
+  private boolean shouldBeRemoved(PooledResourceDescriptor<R> resourceDescriptor) {
+    return findReleaseTimestampRecord(resourceDescriptor)
+        .map(Tuple2::getT2)
+        .filter(ts -> System.currentTimeMillis() - ts > unusedResourceTtlMs)
+        .isPresent();
+}
 
   private Optional<Tuple2<PooledResourceDescriptor<R>, Long>> findReleaseTimestampRecord(PooledResourceDescriptor<R> resourceDescriptor) {
     return releasedTimestampsMillis.stream()
@@ -77,4 +77,21 @@ public class DefaultResourcePool<R> extends LimitedSizeResourcePool<R> {
         .findAny();
   }
 
+  private void remove(PooledResourceDescriptor<R> resourceDescriptor) {
+    final var acquired = resourceDescriptor.getStatus().compareAndSet(Status.FREE, Status.BUSY);
+    if (acquired) {
+      final var releaseTimestampRecord = findReleaseTimestampRecord(resourceDescriptor);
+      final var expired = releaseTimestampRecord
+          .map(Tuple2::getT2)
+          .filter(ts -> System.currentTimeMillis() - ts > unusedResourceTtlMs)
+          .isPresent();
+      if (expired) {
+        resourceFactory.destroy(resourceDescriptor.getResource().getResource());
+        resources.remove(resourceDescriptor);
+        releasedTimestampsMillis.remove(releaseTimestampRecord.get());
+      } else {
+        resourceDescriptor.getStatus().set(Status.FREE);
+      }
+    }
+  }
 }

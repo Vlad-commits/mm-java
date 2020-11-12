@@ -2,11 +2,10 @@ package org.mm.pool.thread;
 
 
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 class SingleThreadWorker implements Worker {
-  private final AtomicBoolean running = new AtomicBoolean(false);
-  private volatile Runnable runnable;
+  private final AtomicReference<Runnable> runnable = new AtomicReference<>(null);
   private volatile boolean terminating = false;
 
   public SingleThreadWorker(boolean daemon) {
@@ -20,12 +19,9 @@ class SingleThreadWorker implements Worker {
     if (runnable == null) {
       throw new NullPointerException();
     }
-
-    if (this.running.compareAndSet(false, true)) {
-      this.runnable = runnable;
-    } else {
-      throw new RejectedExecutionException("Worker is busy.");
-    }
+    do {
+      Thread.onSpinWait();
+    } while (!this.runnable.compareAndSet(null, runnable));
   }
 
   @Override
@@ -35,13 +31,16 @@ class SingleThreadWorker implements Worker {
 
   public void run() {
     while (!this.terminating) {
-      while (this.runnable == null && !this.terminating) {
+      while (this.runnable.get() == null && !this.terminating) {
         Thread.onSpinWait();
       }
+      final var runnable = this.runnable.get();
       if (runnable != null) {
-        this.runnable.run();
-        this.runnable = null;
-        this.running.set(false);
+        try {
+          runnable.run();
+        } finally {
+          this.runnable.set(null);
+        }
       }
     }
   }
