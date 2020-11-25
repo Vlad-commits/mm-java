@@ -1,10 +1,32 @@
 package org.mm;
 
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
+
 import java.io.IOException;
 import java.nio.file.*;
 
 public class Task4 {
   public static void main(String[] args) throws IOException {
+    Tuple2<Path, Path> directoryAndFile = parseArgs(args);
+
+    Path directory = directoryAndFile.getT1();
+    Path targetFile = directoryAndFile.getT2();
+
+    writeDirectoryStructureToFile(directory, targetFile);
+  }
+
+  static void writeDirectoryStructureToFile(Path directory, Path targetFile) throws IOException {
+    Files.deleteIfExists(targetFile);
+    Files.createDirectories(targetFile.getParent());
+    Files.createFile(targetFile);
+
+    try (var writer = Files.newBufferedWriter(targetFile)) {
+      visit(directory, p -> writer.write(p.toString() + "\n"));
+    }
+  }
+
+  static Tuple2<Path, Path> parseArgs(String[] args) {
     if (args.length != 2) {
       illegalArguments();
     }
@@ -15,15 +37,9 @@ public class Task4 {
     if (!Files.isDirectory(path)) {
       illegalArguments();
     }
-
     final var targetPath = Paths.get(file);
 
-    Files.deleteIfExists(targetPath);
-    Files.createFile(targetPath);
-
-    try (var writer = Files.newBufferedWriter(targetPath)) {
-      visit(path, p -> writer.write(p.toString() + "\n"));
-    }
+    return Tuples.of(path, targetPath);
   }
 
 
